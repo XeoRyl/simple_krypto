@@ -94,9 +94,9 @@
                     <div class="card-body py-2">
                         <h5 class="card-title mb-1">計算プレビュー</h5>
                         <div class="d-flex justify-content-between align-items-center">
-                            <div class="preview-card">{{ selectedCards[0] || '' }}</div>
-                            <div class="preview-card" :style="{ 'background-color': selectedOperation ? '#007bff' : 'white' }">{{ selectedOperation || '' }}</div>
-                            <div class="preview-card">{{ selectedCards[1] || '' }}</div>
+                            <div class="preview-card">{{ selectedCards[0] }}</div>
+                            <div class="preview-card" :style="{ 'background-color': selectedOperation ? '#007bff' : 'white' }">{{ selectedOperation }}</div>
+                            <div class="preview-card">{{ selectedCards[1] }}</div>
                             <span class="display-4">=</span>
                             <div class="preview-card">{{ calculationResult }}</div>
                         </div>
