@@ -18,7 +18,7 @@
             border: 1px solid #007bff;
             color: #007bff;
             width: 60px;
-            height: 80px;
+            height: 60px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -37,7 +37,7 @@
         .preview-card {
             border: 2px dashed #007bff;
             width: 60px;
-            height: 80px;
+            height: 60px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -46,30 +46,33 @@
         .operation-card {
             background-color: #007bff;
             color: white;
-            width: 60px;
-            height: 80px;
+            width: 50px;
+            height: 50px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 24px;
             cursor: pointer;
         }
+        .operation-card.selected {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
-    <div id="app" class="container">
-        <h1 class="text-center my-4">クリプトゲーム</h1>
+    <div id="app" class="container py-3">
+        <h1 class="text-center mb-3">クリプトゲーム</h1>
         <div class="row">
             <div class="col-md-6 offset-md-3">
-                <div class="card mb-3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">目的のカード</h5>
+                <div class="card mb-2">
+                    <div class="card-body text-center py-2">
+                        <h5 class="card-title mb-1">目的のカード</h5>
                         <p class="card-text display-4">{{ goalCard }}</p>
                     </div>
                 </div>
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">手段のカード</h5>
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <h5 class="card-title mb-1">手段のカード</h5>
                         <div class="d-flex justify-content-between">
                             <div v-for="(card, index) in meansCards" :key="index" class="means-card" :class="{ 'selected': selectedCardIndexes.includes(index), 'invalid': isInvalidCard(card, index) }" @click="selectCard(card, index)" :disabled="isInvalidCard(card, index)">
                                 {{ card }}
@@ -77,19 +80,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">四則演算</h5>
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <h5 class="card-title mb-1">四則演算</h5>
                         <div class="d-flex justify-content-between">
-                            <div v-for="(operation, index) in operations" :key="index" class="operation-card" @click="selectOperation(operation)">
+                            <div v-for="(operation, index) in operations" :key="index" class="operation-card" :class="{ 'selected': selectedOperation === operation }" @click="selectOperation(operation)">
                                 {{ operation }}
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">計算プレビュー</h5>
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <h5 class="card-title mb-1">計算プレビュー</h5>
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="preview-card">{{ selectedCards[0] || '' }}</div>
                             <div class="preview-card" :style="{ 'background-color': selectedOperation ? '#007bff' : 'white' }">{{ selectedOperation || '' }}</div>
@@ -99,7 +102,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between mb-3">
                     <button class="btn btn-success" @click="submitCalculation" :disabled="!canSubmit">計算実行</button>
                     <button class="btn btn-warning" @click="initialize" :disabled="!canInitialize">初期化</button>
                     <button class="btn btn-secondary" @click="resetSelection">キャンセル</button>
@@ -119,7 +122,7 @@
                 initialMeansCards: [],
                 selectedCardIndexes: [],
                 selectedOperation: null,
-                operations: ['+', '-', '*', '/'],
+                operations: ['+', '-', '×', '÷'],
                 calculationResult: null
             },
             computed: {
@@ -157,10 +160,10 @@
                             case '-':
                                 this.calculationResult = a - b;
                                 break;
-                            case '*':
+                            case '×':
                                 this.calculationResult = a * b;
                                 break;
-                            case '/':
+                            case '÷':
                                 this.calculationResult = a / b;
                                 break;
                         }
@@ -187,8 +190,13 @@
                     this.calculationResult = null;
                 },
                 resetGame() {
-                    this.goalCard = this.generateRandomCard();
-                    this.meansCards = this.generateRandomCards(5);
+                    let goalCard, meansCards;
+                    do {
+                        goalCard = this.generateRandomCard();
+                        meansCards = this.generateRandomCards(5);
+                    } while (!this.hasSolution(meansCards, goalCard));
+                    this.goalCard = goalCard;
+                    this.meansCards = meansCards;
                     this.initialMeansCards = [...this.meansCards];
                     this.resetSelection();
                 },
@@ -227,10 +235,10 @@
                             case '-':
                                 result = selectedCard - card;
                                 break;
-                            case '*':
+                            case '×':
                                 result = selectedCard * card;
                                 break;
-                            case '/':
+                            case '÷':
                                 result = selectedCard / card;
                                 if (!Number.isInteger(result)) {
                                     return true;
@@ -240,6 +248,49 @@
                         return result < 0;
                     }
                     return false;
+                },
+                hasSolution(cards, target) {
+                    const operators = ['+', '-', '×', '÷'];
+                    for (const perm of this.getPermutations(cards)) {
+                        for (const ops of this.getCartesianProduct(operators, 4)) {
+                            const expr = `(((${perm[0]} ${ops[0]} ${perm[1]}) ${ops[1]} ${perm[2]}) ${ops[2]} ${perm[3]}) ${ops[3]} ${perm[4]}`;
+                            try {
+                                if (eval(expr) === target) {
+                                    return true;
+                                }
+                            } catch (error) {
+                                continue;
+                            }
+                        }
+                    }
+                    return false;
+                },
+                getPermutations(arr) {
+                    const result = [];
+                    const permute = (cur, rest) => {
+                        if (rest.length === 0) {
+                            result.push(cur);
+                        }
+                        for (let i = 0; i < rest.length; i++) {
+                            permute(cur.concat(rest[i]), rest.slice(0, i).concat(rest.slice(i + 1)));
+                        }
+                    };
+                    permute([], arr);
+                    return result;
+                },
+                getCartesianProduct(arr, repeat) {
+                    const result = [];
+                    const product = (cur, depth) => {
+                        if (depth === repeat) {
+                            result.push(cur);
+                            return;
+                        }
+                        for (let i = 0; i < arr.length; i++) {
+                            product(cur.concat(arr[i]), depth + 1);
+                        }
+                    };
+                    product([], 0);
+                    return result;
                 }
             },
             created() {
