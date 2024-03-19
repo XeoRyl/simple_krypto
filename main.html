@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クリプトゲーム</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-title {
+            font-weight: bold;
+        }
+        .means-card {
+            background-color: white;
+            border: 1px solid #007bff;
+            color: #007bff;
+            width: 60px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .means-card.selected {
+            background-color: #007bff;
+            color: white;
+        }
+        .means-card.invalid {
+            border-color: #6c757d;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+        .preview-card {
+            border: 2px dashed #007bff;
+            width: 60px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+        .operation-card {
+            background-color: #007bff;
+            color: white;
+            width: 60px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <h1 class="text-center my-4">クリプトゲーム</h1>
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card mb-3">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">目的のカード</h5>
+                        <p class="card-text display-4">{{ goalCard }}</p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">手段のカード</h5>
+                        <div class="d-flex justify-content-between">
+                            <div v-for="(card, index) in meansCards" :key="index" class="means-card" :class="{ 'selected': selectedCardIndexes.includes(index), 'invalid': isInvalidCard(card, index) }" @click="selectCard(card, index)" :disabled="isInvalidCard(card, index)">
+                                {{ card }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">四則演算</h5>
+                        <div class="d-flex justify-content-between">
+                            <div v-for="(operation, index) in operations" :key="index" class="operation-card" @click="selectOperation(operation)">
+                                {{ operation }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">計算プレビュー</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="preview-card">{{ selectedCards[0] || '' }}</div>
+                            <div class="preview-card" :style="{ 'background-color': selectedOperation ? '#007bff' : 'white' }">{{ selectedOperation || '' }}</div>
+                            <div class="preview-card">{{ selectedCards[1] || '' }}</div>
+                            <span class="display-4">=</span>
+                            <div class="preview-card">{{ calculationResult }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-success" @click="submitCalculation" :disabled="!canSubmit">計算実行</button>
+                    <button class="btn btn-warning" @click="initialize" :disabled="!canInitialize">初期化</button>
+                    <button class="btn btn-secondary" @click="resetSelection">キャンセル</button>
+                    <button class="btn btn-danger" @click="resetGame">リセット</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                goalCard: 0,
+                meansCards: [],
+                initialMeansCards: [],
+                selectedCardIndexes: [],
+                selectedOperation: null,
+                operations: ['+', '-', '*', '/'],
+                calculationResult: null
+            },
+            computed: {
+                selectedCards() {
+                    return this.selectedCardIndexes.map(index => this.meansCards[index]);
+                },
+                canSubmit() {
+                    return this.selectedCardIndexes.length === 2 && this.selectedOperation !== null && Number.isInteger(this.calculationResult) && this.calculationResult >= 0;
+                },
+                canInitialize() {
+                    return this.meansCards.length !== this.initialMeansCards.length;
+                }
+            },
+            methods: {
+                selectCard(card, index) {
+                    if (this.isInvalidCard(card, index)) return;
+                    if (this.selectedCardIndexes.includes(index)) {
+                        this.selectedCardIndexes = this.selectedCardIndexes.filter(i => i !== index);
+                    } else if (this.selectedCardIndexes.length < 2) {
+                        this.selectedCardIndexes.push(index);
+                    }
+                    this.updateCalculationResult();
+                },
+                selectOperation(operation) {
+                    this.selectedOperation = operation;
+                    this.updateCalculationResult();
+                },
+                updateCalculationResult() {
+                    if (this.selectedCardIndexes.length === 2 && this.selectedOperation !== null) {
+                        const [a, b] = this.selectedCards;
+                        switch (this.selectedOperation) {
+                            case '+':
+                                this.calculationResult = a + b;
+                                break;
+                            case '-':
+                                this.calculationResult = a - b;
+                                break;
+                            case '*':
+                                this.calculationResult = a * b;
+                                break;
+                            case '/':
+                                this.calculationResult = a / b;
+                                break;
+                        }
+                    } else {
+                        this.calculationResult = null;
+                    }
+                },
+                submitCalculation() {
+                    if (this.canSubmit) {
+                        const newCard = this.calculationResult;
+                        this.meansCards = this.meansCards.filter((_, index) => !this.selectedCardIndexes.includes(index));
+                        this.meansCards.push(newCard);
+                        this.resetSelection();
+                        this.checkGameEnd();
+                    }
+                },
+                initialize() {
+                    this.meansCards = [...this.initialMeansCards];
+                    this.resetSelection();
+                },
+                resetSelection() {
+                    this.selectedCardIndexes = [];
+                    this.selectedOperation = null;
+                    this.calculationResult = null;
+                },
+                resetGame() {
+                    this.goalCard = this.generateRandomCard();
+                    this.meansCards = this.generateRandomCards(5);
+                    this.initialMeansCards = [...this.meansCards];
+                    this.resetSelection();
+                },
+                checkGameEnd() {
+                    if (this.meansCards.length === 1 && this.meansCards[0] === this.goalCard) {
+                        alert('おめでとうございます！あなたの勝ちです！');
+                        this.resetGame();
+                    }
+                },
+                generateRandomCard() {
+                    const cards = [
+                        ...Array(3).fill(1), ...Array(3).fill(2), ...Array(3).fill(3), ...Array(3).fill(4), ...Array(3).fill(5), ...Array(3).fill(6),
+                        ...Array(3).fill(7), ...Array(3).fill(8), ...Array(3).fill(9), ...Array(3).fill(10),
+                        ...Array(2).fill(11), ...Array(2).fill(12), ...Array(2).fill(13), ...Array(2).fill(14), ...Array(2).fill(15), ...Array(2).fill(16), ...Array(2).fill(17),
+                        ...Array(1).fill(18), ...Array(1).fill(19), ...Array(1).fill(20), ...Array(1).fill(21), ...Array(1).fill(22), ...Array(1).fill(23), ...Array(1).fill(24), ...Array(1).fill(25)
+                    ];
+                    const randomIndex = Math.floor(Math.random() * cards.length);
+                    return cards[randomIndex];
+                },
+                generateRandomCards(count) {
+                    const cards = [];
+                    for (let i = 0; i < count; i++) {
+                        cards.push(this.generateRandomCard());
+                    }
+                    return cards;
+                },
+                isInvalidCard(card, index) {
+                    if (this.selectedCardIndexes.length === 1 && this.selectedOperation) {
+                        const [selectedIndex] = this.selectedCardIndexes;
+                        const selectedCard = this.meansCards[selectedIndex];
+                        let result;
+                        switch (this.selectedOperation) {
+                            case '+':
+                                result = selectedCard + card;
+                                break;
+                            case '-':
+                                result = selectedCard - card;
+                                break;
+                            case '*':
+                                result = selectedCard * card;
+                                break;
+                            case '/':
+                                result = selectedCard / card;
+                                if (!Number.isInteger(result)) {
+                                    return true;
+                                }
+                                break;
+                        }
+                        return result < 0;
+                    }
+                    return false;
+                }
+            },
+            created() {
+                this.resetGame();
+            }
+        });
+    </script>
+</body>
+</html>
